@@ -556,8 +556,10 @@ if __name__ == '__main__':
         print("⚠️  Warning: OPENAI_API_KEY not set. Some AI features may not work.")
         print("   Set your OpenAI API key in a .env file or environment variable.")
     
+    # Get port from environment variable (for Render deployment) or use default
+    port = int(os.environ.get('PORT', 5001))
+    
     # Start the Flask development server
     # debug=True enables auto-reload when code changes
     # host='0.0.0.0' makes the server accessible from other devices on the network
-    # port=5001 avoids conflicts with AirPlay Receiver on macOS
-    app.run(debug=True, host='0.0.0.0', port=5001) 
+    app.run(debug=True, host='0.0.0.0', port=port) 
