@@ -1,0 +1,161 @@
+{
+  "genres": {
+    "drill": {
+      "description": "Dark, aggressive UK drill style",
+      "characteristics": ["dark themes", "aggressive delivery", "trap beats", "street narratives"],
+      "scoring_weights": {
+        "cleverness": 0.3,
+        "rhyme_density": 0.4,
+        "wordplay": 0.2,
+        "radio_score": 0.1
+      }
+    },
+    "trap": {
+      "description": "Southern trap with heavy 808s",
+      "characteristics": ["repetitive hooks", "simple rhymes", "catchy melodies", "commercial appeal"],
+      "scoring_weights": {
+        "cleverness": 0.2,
+        "rhyme_density": 0.3,
+        "wordplay": 0.2,
+        "radio_score": 0.3
+      }
+    },
+    "boom_bap": {
+      "description": "Classic 90s boom bap style",
+      "characteristics": ["complex wordplay", "intellectual themes", "jazz samples", "conscious lyrics"],
+      "scoring_weights": {
+        "cleverness": 0.4,
+        "rhyme_density": 0.3,
+        "wordplay": 0.3,
+        "radio_score": 0.0
+      }
+    },
+    "commercial": {
+      "description": "Mainstream commercial hip-hop",
+      "characteristics": ["catchy hooks", "simple lyrics", "pop appeal", "radio friendly"],
+      "scoring_weights": {
+        "cleverness": 0.1,
+        "rhyme_density": 0.2,
+        "wordplay": 0.1,
+        "radio_score": 0.6
+      }
+    }
+  },
+  "scoring_criteria": {
+    "cleverness": {
+      "excellent": {
+        "range": [80, 100],
+        "description": "Exceptional metaphors, unique perspectives, cultural depth",
+        "examples": ["complex metaphors", "double entendres", "cultural references", "unique angles"]
+      },
+      "good": {
+        "range": [60, 79],
+        "description": "Solid wordplay and creative expression",
+        "examples": ["good metaphors", "some wordplay", "creative lines"]
+      },
+      "average": {
+        "range": [40, 59],
+        "description": "Basic cleverness with room for improvement",
+        "examples": ["simple metaphors", "basic wordplay", "common expressions"]
+      },
+      "poor": {
+        "range": [0, 39],
+        "description": "Lacks cleverness and creative expression",
+        "examples": ["clichés", "unoriginal lines", "basic vocabulary"]
+      }
+    },
+    "rhyme_density": {
+      "excellent": {
+        "range": [80, 100],
+        "description": "Complex multi-syllabic rhymes, internal rhymes, perfect flow",
+        "examples": ["multi-syllabic rhymes", "internal rhymes", "complex patterns", "perfect cadence"]
+      },
+      "good": {
+        "range": [60, 79],
+        "description": "Good rhyme schemes with some complexity",
+        "examples": ["end rhymes", "some internal rhymes", "consistent patterns"]
+      },
+      "average": {
+        "range": [40, 59],
+        "description": "Basic rhyming with occasional complexity",
+        "examples": ["simple end rhymes", "basic patterns", "inconsistent flow"]
+      },
+      "poor": {
+        "range": [0, 39],
+        "description": "Poor rhyming and flow issues",
+        "examples": ["forced rhymes", "awkward flow", "no pattern"]
+      }
+    },
+    "wordplay": {
+      "excellent": {
+        "range": [80, 100],
+        "description": "Masterful puns, punchlines, and literary devices",
+        "examples": ["clever puns", "hard punchlines", "literary devices", "word manipulation"]
+      },
+      "good": {
+        "range": [60, 79],
+        "description": "Good wordplay and punchlines",
+        "examples": ["some puns", "decent punchlines", "word flips"]
+      },
+      "average": {
+        "range": [40, 59],
+        "description": "Basic wordplay with occasional highlights",
+        "examples": ["simple puns", "basic punchlines", "occasional flips"]
+      },
+      "poor": {
+        "range": [0, 39],
+        "description": "Lacks wordplay and punchlines",
+        "examples": ["no puns", "weak punchlines", "basic vocabulary"]
+      }
+    },
+    "radio_score": {
+      "excellent": {
+        "range": [80, 100],
+        "description": "Highly commercial with strong hook potential",
+        "examples": ["catchy hooks", "memorable lines", "replay value", "mass appeal"]
+      },
+      "good": {
+        "range": [60, 79],
+        "description": "Good commercial potential",
+        "examples": ["decent hooks", "some memorable lines", "good flow"]
+      },
+      "average": {
+        "range": [40, 59],
+        "description": "Moderate commercial appeal",
+        "examples": ["basic hooks", "some memorable moments", "decent flow"]
+      },
+      "poor": {
+        "range": [0, 39],
+        "description": "Low commercial potential",
+        "examples": ["no hooks", "forgettable lines", "poor flow"]
+      }
+    }
+  },
+  "popularity_predictions": {
+    "viral": {
+      "range": [85, 100],
+      "description": "High potential for viral success",
+      "characteristics": ["catchy", "memorable", "shareable", "trending potential"]
+    },
+    "popular": {
+      "range": [70, 84],
+      "description": "Good potential for mainstream success",
+      "characteristics": ["commercial appeal", "good hooks", "radio friendly"]
+    },
+    "niche": {
+      "range": [50, 69],
+      "description": "Appeals to specific audience",
+      "characteristics": ["cult following", "genre specific", "underground appeal"]
+    },
+    "experimental": {
+      "range": [30, 49],
+      "description": "Experimental or avant-garde",
+      "characteristics": ["artistic", "complex", "challenging", "niche audience"]
+    },
+    "amateur": {
+      "range": [0, 29],
+      "description": "Needs significant improvement",
+      "characteristics": ["basic", "unpolished", "needs work"]
+    }
+  }
+} 

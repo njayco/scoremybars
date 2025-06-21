@@ -1,0 +1,248 @@
+{
+  "genres": {
+    "hip_hop_rap": {
+      "name": "Hip-Hop/Rap",
+      "description": "Contemporary hip-hop and rap music",
+      "characteristics": ["rhyme density", "wordplay", "metaphors", "cultural references"],
+      "top_songs": [
+        {
+          "title": "Old Town Road",
+          "artist": "Lil Nas X",
+          "peak_position": 1,
+          "weeks_at_1": 19,
+          "year": 2019,
+          "lyrics_sample": "Yeah, I'm gonna take my horse to the old town road\nI'm gonna ride 'til I can't no more\nI'm gonna take my horse to the old town road\nI'm gonna ride 'til I can't no more",
+          "scores": {
+            "cleverness": 85,
+            "rhyme_density": 90,
+            "wordplay": 88,
+            "radio_score": 95
+          },
+          "key_features": ["catchy hook", "simple rhymes", "memorable chorus", "viral appeal"]
+        },
+        {
+          "title": "God's Plan",
+          "artist": "Drake",
+          "peak_position": 1,
+          "weeks_at_1": 11,
+          "year": 2018,
+          "lyrics_sample": "God's plan, God's plan\nI can't do this on my own ayy, no, ayy\nSomeone watchin' this shit close, yep, close\nI've been me since Scarlett Road ayy, ayy",
+          "scores": {
+            "cleverness": 78,
+            "rhyme_density": 82,
+            "wordplay": 75,
+            "radio_score": 92
+          },
+          "key_features": ["repetitive hook", "simple structure", "emotional delivery", "mass appeal"]
+        },
+        {
+          "title": "Sicko Mode",
+          "artist": "Travis Scott",
+          "peak_position": 1,
+          "weeks_at_1": 1,
+          "year": 2018,
+          "lyrics_sample": "Astro, yeah\nSun is down, freezin' cold\nThat's how we already know winter's here\nMy dawg would probably do it for a Louis belt\nThat's just all he know, he don't know nothin' else",
+          "scores": {
+            "cleverness": 88,
+            "rhyme_density": 85,
+            "wordplay": 90,
+            "radio_score": 87
+          },
+          "key_features": ["complex structure", "multiple flows", "atmospheric", "innovative"]
+        }
+      ]
+    },
+    "pop": {
+      "name": "Pop",
+      "description": "Mainstream pop music",
+      "characteristics": ["catchy melodies", "simple lyrics", "emotional hooks", "mass appeal"],
+      "top_songs": [
+        {
+          "title": "Blinding Lights",
+          "artist": "The Weeknd",
+          "peak_position": 1,
+          "weeks_at_1": 4,
+          "year": 2020,
+          "lyrics_sample": "Yeah\nI've been tryna call\nI've been on my own for long enough\nMaybe you can show me how to love, maybe\nI'm going through withdrawals\nYou don't even have to do too much",
+          "scores": {
+            "cleverness": 70,
+            "rhyme_density": 75,
+            "wordplay": 65,
+            "radio_score": 98
+          },
+          "key_features": ["catchy melody", "emotional lyrics", "simple structure", "universal appeal"]
+        },
+        {
+          "title": "Levitating",
+          "artist": "Dua Lipa",
+          "peak_position": 2,
+          "weeks_at_1": 0,
+          "year": 2020,
+          "lyrics_sample": "If you wanna run away with me, I know a galaxy\nAnd I can take you for a ride\nI had a premonition that we fell into a rhythm\nWhere the music don't stop for life",
+          "scores": {
+            "cleverness": 75,
+            "rhyme_density": 80,
+            "wordplay": 70,
+            "radio_score": 95
+          },
+          "key_features": ["disco influence", "upbeat tempo", "romantic lyrics", "danceable"]
+        }
+      ]
+    },
+    "r_b": {
+      "name": "R&B/Soul",
+      "description": "Rhythm and blues with soulful elements",
+      "characteristics": ["smooth vocals", "emotional depth", "romantic themes", "soulful delivery"],
+      "top_songs": [
+        {
+          "title": "Blinding Lights",
+          "artist": "The Weeknd",
+          "peak_position": 1,
+          "weeks_at_1": 4,
+          "year": 2020,
+          "lyrics_sample": "Yeah\nI've been tryna call\nI've been on my own for long enough\nMaybe you can show me how to love, maybe",
+          "scores": {
+            "cleverness": 72,
+            "rhyme_density": 78,
+            "wordplay": 68,
+            "radio_score": 96
+          },
+          "key_features": ["smooth vocals", "emotional delivery", "romantic themes", "atmospheric"]
+        }
+      ]
+    },
+    "country": {
+      "name": "Country",
+      "description": "Country music with storytelling elements",
+      "characteristics": ["storytelling", "emotional narratives", "simple melodies", "authentic lyrics"],
+      "top_songs": [
+        {
+          "title": "Old Town Road",
+          "artist": "Lil Nas X",
+          "peak_position": 1,
+          "weeks_at_1": 19,
+          "year": 2019,
+          "lyrics_sample": "Yeah, I'm gonna take my horse to the old town road\nI'm gonna ride 'til I can't no more",
+          "scores": {
+            "cleverness": 80,
+            "rhyme_density": 85,
+            "wordplay": 75,
+            "radio_score": 90
+          },
+          "key_features": ["storytelling", "simple structure", "memorable hook", "crossover appeal"]
+        }
+      ]
+    },
+    "electronic_dance": {
+      "name": "Electronic/Dance",
+      "description": "Electronic music with dance elements",
+      "characteristics": ["repetitive hooks", "dance beats", "simple lyrics", "energy"],
+      "top_songs": [
+        {
+          "title": "Blinding Lights",
+          "artist": "The Weeknd",
+          "peak_position": 1,
+          "weeks_at_1": 4,
+          "year": 2020,
+          "lyrics_sample": "Yeah\nI've been tryna call\nI've been on my own for long enough",
+          "scores": {
+            "cleverness": 65,
+            "rhyme_density": 70,
+            "wordplay": 60,
+            "radio_score": 97
+          },
+          "key_features": ["electronic production", "danceable beat", "simple lyrics", "high energy"]
+        }
+      ]
+    },
+    "rock": {
+      "name": "Rock",
+      "description": "Rock music with guitar-driven sound",
+      "characteristics": ["guitar riffs", "emotional intensity", "rebellious themes", "powerful vocals"],
+      "top_songs": [
+        {
+          "title": "Blinding Lights",
+          "artist": "The Weeknd",
+          "peak_position": 1,
+          "weeks_at_1": 4,
+          "year": 2020,
+          "lyrics_sample": "Yeah\nI've been tryna call\nI've been on my own for long enough",
+          "scores": {
+            "cleverness": 75,
+            "rhyme_density": 72,
+            "wordplay": 70,
+            "radio_score": 88
+          },
+          "key_features": ["guitar-driven", "emotional intensity", "powerful vocals", "anthemic"]
+        }
+      ]
+    }
+  },
+  "scoring_weights": {
+    "hip_hop_rap": {
+      "cleverness": 0.25,
+      "rhyme_density": 0.30,
+      "wordplay": 0.25,
+      "radio_score": 0.20
+    },
+    "pop": {
+      "cleverness": 0.15,
+      "rhyme_density": 0.20,
+      "wordplay": 0.15,
+      "radio_score": 0.50
+    },
+    "r_b": {
+      "cleverness": 0.20,
+      "rhyme_density": 0.25,
+      "wordplay": 0.20,
+      "radio_score": 0.35
+    },
+    "country": {
+      "cleverness": 0.25,
+      "rhyme_density": 0.25,
+      "wordplay": 0.20,
+      "radio_score": 0.30
+    },
+    "electronic_dance": {
+      "cleverness": 0.10,
+      "rhyme_density": 0.15,
+      "wordplay": 0.10,
+      "radio_score": 0.65
+    },
+    "rock": {
+      "cleverness": 0.25,
+      "rhyme_density": 0.20,
+      "wordplay": 0.20,
+      "radio_score": 0.35
+    }
+  },
+  "billboard_criteria": {
+    "number_1_hits": {
+      "description": "Songs that reached #1 on Billboard Hot 100",
+      "baseline_scores": {
+        "cleverness": 85,
+        "rhyme_density": 80,
+        "wordplay": 80,
+        "radio_score": 95
+      }
+    },
+    "top_10_hits": {
+      "description": "Songs that reached top 10 on Billboard Hot 100",
+      "baseline_scores": {
+        "cleverness": 75,
+        "rhyme_density": 70,
+        "wordplay": 70,
+        "radio_score": 85
+      }
+    },
+    "hot_100_hits": {
+      "description": "Songs that charted on Billboard Hot 100",
+      "baseline_scores": {
+        "cleverness": 65,
+        "rhyme_density": 60,
+        "wordplay": 60,
+        "radio_score": 75
+      }
+    }
+  }
+} 

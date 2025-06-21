@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ScoreMyBars - AI Rap Lyric Analyzer</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <link rel="icon" href="/static/images/mic.png">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎤 ScoreMyBars</h1>
+            <p class="subtitle">Paste your rap lyrics and let AI break down your bars compared to Billboard Hot 100 hits.</p>
+        </header>
+        <main>
+            <section class="lyric-input-section">
+                <!-- Song Metadata Section -->
+                <div class="metadata-section">
+                    <h3>📝 Song Information</h3>
+                    <div class="metadata-grid">
+                        <div class="input-group">
+                            <label for="songTitle">Song Title:</label>
+                            <input type="text" id="songTitle" placeholder="Enter song title..." maxlength="100">
+                        </div>
+                        <div class="input-group">
+                            <label for="artistName">Artist Name:</label>
+                            <input type="text" id="artistName" placeholder="Enter artist name..." maxlength="100">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lyrics and Genre Section -->
+                <div class="input-row">
+                    <div class="input-group">
+                        <label for="lyrics">Paste or type your rap lyrics:</label>
+                        <textarea id="lyrics" rows="10" placeholder="[Verse 1]\nI'm in the studio, cooking up the heat..." autofocus></textarea>
+                    </div>
+                    <div class="input-group">
+                        <label for="genreSelect">Compare to Billboard hits in:</label>
+                        <select id="genreSelect">
+                            <option value="">Loading genres...</option>
+                        </select>
+                        <p class="genre-description" id="genreDescription">Select a genre to compare your lyrics to Billboard Hot 100 hits in that category.</p>
+                    </div>
+                </div>
+                <div class="input-actions">
+                    <button id="analyzeBtn">Analyze My Bars</button>
+                    <button id="sampleBtn" class="secondary">Load Sample Lyrics</button>
+                </div>
+            </section>
+            <section id="resultsSection" class="results-section hidden">
+                <h2>Results Dashboard</h2>
+                <div id="resultsDashboard">
+                    <!-- Results will be rendered here by JS -->
+                </div>
+            </section>
+        </main>
+        <footer>
+            <p>Built with ❤️ for the hip-hop community &bull; <a href="https://github.com/njayco/pursuit" target="_blank">GitHub</a></p>
+        </footer>
+    </div>
+    <script src="/static/js/main.js"></script>
+</body>
+</html> 
