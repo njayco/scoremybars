@@ -224,7 +224,13 @@ def export_results():
         
         if export_type == 'pdf':
             if not PDF_AVAILABLE:
-                return jsonify({'error': 'PDF export not available. Install reportlab: pip install reportlab'}), 400
+                # Fallback to text-based export
+                text_content = generate_text_export(analysis_data)
+                return jsonify({
+                    'success': True,
+                    'download_url': f"data:text/plain;base64,{base64.b64encode(text_content.encode()).decode()}",
+                    'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
+                })
             
             # Generate PDF export
             pdf_buffer = generate_pdf_export(analysis_data)
@@ -235,7 +241,13 @@ def export_results():
             })
         elif export_type == 'image':
             if not IMAGE_AVAILABLE:
-                return jsonify({'error': 'Image export not available. Install PIL: pip install Pillow'}), 400
+                # Fallback to text-based export
+                text_content = generate_text_export(analysis_data)
+                return jsonify({
+                    'success': True,
+                    'download_url': f"data:text/plain;base64,{base64.b64encode(text_content.encode()).decode()}",
+                    'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
+                })
             
             # Generate image export
             image_buffer = generate_image_export(analysis_data)
@@ -250,6 +262,87 @@ def export_results():
     except Exception as e:
         print(f"Export error: {e}")
         return jsonify({'error': f'Export failed: {str(e)}'}), 500
+
+def generate_text_export(analysis_data):
+    """
+    Generate text-based export when PDF/Image libraries are not available
+    """
+    lines = []
+    lines.append("🎤 ScoreMyBars Analysis Report")
+    lines.append("=" * 50)
+    lines.append("")
+    
+    # Song Information
+    song_metadata = analysis_data.get('song_metadata', {})
+    if song_metadata:
+        lines.append("📝 Song Information")
+        lines.append("-" * 20)
+        lines.append(f"Title: {song_metadata.get('title', 'Untitled')}")
+        lines.append(f"Artist: {song_metadata.get('artist', 'Unknown Artist')}")
+        
+        description = song_metadata.get('description', {})
+        if description:
+            lines.append(f"Description: {description.get('description', 'No description available')}")
+            lines.append(f"Sub-Genre: {description.get('sub_genre', 'Unknown')}")
+            lines.append(f"Mood: {description.get('mood', 'Unknown')}")
+            lines.append(f"Target Audience: {description.get('target_audience', 'Unknown')}")
+            lines.append(f"Lyrical Style: {description.get('lyrical_style', 'Unknown')}")
+            
+            themes = description.get('themes', [])
+            if themes:
+                lines.append(f"Key Themes: {', '.join(themes)}")
+        lines.append("")
+    
+    # Overall Scores
+    overall_scores = analysis_data.get('overall_scores', {})
+    if overall_scores:
+        lines.append("📊 Overall Scores")
+        lines.append("-" * 20)
+        lines.append(f"Cleverness: {overall_scores.get('cleverness', 0)}/100")
+        lines.append(f"Rhyme Density: {overall_scores.get('rhyme_density', 0)}/100")
+        lines.append(f"Wordplay: {overall_scores.get('wordplay', 0)}/100")
+        lines.append(f"Radio Hit: {overall_scores.get('radio_score', 0)}/100")
+        lines.append("")
+    
+    # Section Breakdown
+    sections = analysis_data.get('sections', [])
+    if sections:
+        lines.append("📝 Section Breakdown")
+        lines.append("-" * 20)
+        
+        for i, section in enumerate(sections, 1):
+            lines.append(f"Section {i}: {section.get('type', 'Unknown').title()}")
+            lines.append(f"Bars: {section.get('bar_count', 0)}")
+            
+            scores = section.get('scores', {})
+            if scores:
+                lines.append(f"Scores - Cleverness: {scores.get('cleverness', 0)}, Rhyme: {scores.get('rhyme_density', 0)}, Wordplay: {scores.get('wordplay', 0)}, Radio: {scores.get('radio_score', 0)}")
+            
+            # Show first few lines of lyrics
+            text = section.get('text', '')
+            if text:
+                lines.append("Lyrics Preview:")
+                preview_lines = text.split('\n')[:3]
+                for line in preview_lines:
+                    lines.append(f"  {line}")
+                if len(text.split('\n')) > 3:
+                    lines.append("  ...")
+            lines.append("")
+    
+    # Suggestions
+    suggestions = analysis_data.get('suggestions', [])
+    if suggestions:
+        lines.append("💡 Improvement Suggestions")
+        lines.append("-" * 20)
+        for suggestion in suggestions:
+            lines.append(f"• {suggestion}")
+        lines.append("")
+    
+    # Footer
+    lines.append("=" * 50)
+    lines.append(f"Generated by ScoreMyBars on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}")
+    
+    return '\n'.join(lines)
 
 def generate_pdf_export(analysis_data):
     """

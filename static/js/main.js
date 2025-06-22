@@ -493,6 +493,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.removeChild(link);
                 
                 console.log(`Export successful: ${data.filename}`);
+                
+                // Show success message
+                const exportType = data.filename.endsWith('.txt') ? 'Text file' : 
+                                 data.filename.endsWith('.pdf') ? 'PDF' : 'Image';
+                alert(`${exportType} export successful! File: ${data.filename}`);
             } else {
                 alert('Export failed: ' + data.error);
             }
