@@ -1,5 +1,4 @@
 import re
-import pronouncing
 from typing import List, Dict, Any, Tuple
 
 class RhymeEngine:
@@ -8,6 +7,39 @@ class RhymeEngine:
     def __init__(self):
         self.vowels = 'aeiouAEIOU'
         self.consonants = 'bcdfghjklmnpqrstvwxyzBCDFGHJKLMNPQRSTVWXYZ'
+        
+        # Common rhyme patterns for simple detection
+        self.rhyme_patterns = {
+            'ing': ['ing', 'in', 'im'],
+            'er': ['er', 'ir', 'ur'],
+            'ed': ['ed', 'd', 't'],
+            's': ['s', 'z', 'es'],
+            'ly': ['ly', 'lee', 'li'],
+            'tion': ['tion', 'sion', 'cion'],
+            'able': ['able', 'ible'],
+            'ous': ['ous', 'us'],
+            'al': ['al', 'el', 'il', 'ol', 'ul'],
+            'ate': ['ate', 'it', 'et'],
+            'ize': ['ize', 'ise', 'yze'],
+            'ment': ['ment', 'mint'],
+            'ness': ['ness', 'nis'],
+            'ful': ['ful', 'full'],
+            'less': ['less', 'les'],
+            'ing': ['ing', 'in', 'im'],
+            'ed': ['ed', 'd', 't'],
+            's': ['s', 'z', 'es'],
+            'ly': ['ly', 'lee', 'li'],
+            'tion': ['tion', 'sion', 'cion'],
+            'able': ['able', 'ible'],
+            'ous': ['ous', 'us'],
+            'al': ['al', 'el', 'il', 'ol', 'ul'],
+            'ate': ['ate', 'it', 'et'],
+            'ize': ['ize', 'ise', 'yze'],
+            'ment': ['ment', 'mint'],
+            'ness': ['ness', 'nis'],
+            'ful': ['ful', 'full'],
+            'less': ['less', 'les']
+        }
         
     def analyze_rhymes(self, text: str) -> Dict[str, Any]:
         """
@@ -27,7 +59,8 @@ class RhymeEngine:
             'rhyme_density': self._calculate_rhyme_density(lines),
             'rhyme_scheme': self._detect_rhyme_scheme(lines),
             'multi_syllabic_rhymes': self._find_multi_syllabic_rhymes(lines),
-            'slant_rhymes': self._find_slant_rhymes(lines)
+            'slant_rhymes': self._find_slant_rhymes(lines),
+            'pattern': self._detect_rhyme_scheme(lines)  # Add pattern for compatibility
         }
         
         return analysis
@@ -199,8 +232,10 @@ class RhymeEngine:
                 if self._is_multi_syllabic_rhyme(word1, word2):
                     multi_syllabic_rhymes.append({
                         'line_index': line_idx,
-                        'words': [word1, word2],
-                        'syllables': self._count_syllables(word1)
+                        'line': line,
+                        'word1': word1,
+                        'word2': word2,
+                        'position': (i, i + 1)
                     })
         
         return multi_syllabic_rhymes
@@ -213,134 +248,138 @@ class RhymeEngine:
             words = line.lower().split()
             words = [word.strip('.,!?;:()[]{}') for word in words]
             
-            for i in range(len(words)):
-                for j in range(i + 1, len(words)):
-                    if self._is_slant_rhyme(words[i], words[j]):
-                        slant_rhymes.append({
-                            'line_index': line_idx,
-                            'words': [words[i], words[j]],
-                            'similarity': self._calculate_similarity(words[i], words[j])
-                        })
+            for i in range(len(words) - 1):
+                word1 = words[i]
+                word2 = words[i + 1]
+                
+                if self._is_slant_rhyme(word1, word2):
+                    slant_rhymes.append({
+                        'line_index': line_idx,
+                        'line': line,
+                        'word1': word1,
+                        'word2': word2,
+                        'position': (i, i + 1),
+                        'similarity': self._calculate_similarity(word1, word2)
+                    })
         
         return slant_rhymes
     
     def _words_rhyme(self, word1: str, word2: str) -> bool:
-        """Check if two words rhyme"""
+        """Check if two words rhyme using custom algorithm"""
         if word1 == word2:
             return False
         
-        # Get pronunciations
-        pronunciations1 = pronouncing.phones_for_word(word1)
-        pronunciations2 = pronouncing.phones_for_word(word2)
+        # Clean words
+        word1 = word1.lower().strip('.,!?;:()[]{}')
+        word2 = word2.lower().strip('.,!?;:()[]{}')
         
-        if not pronunciations1 or not pronunciations2:
-            return False
+        # Check for exact ending match
+        if word1.endswith(word2) or word2.endswith(word1):
+            return True
         
-        # Check if any pronunciations rhyme by comparing ending sounds
-        for pron1 in pronunciations1:
-            for pron2 in pronunciations2:
-                if self._pronunciations_rhyme(pron1, pron2):
+        # Check for common rhyme patterns
+        for pattern, variations in self.rhyme_patterns.items():
+            if word1.endswith(pattern) and word2.endswith(pattern):
+                return True
+            for variation in variations:
+                if word1.endswith(variation) and word2.endswith(variation):
+                    return True
+        
+        # Check for vowel-consonant ending patterns
+        if len(word1) >= 3 and len(word2) >= 3:
+            # Get last 3 characters
+            end1 = word1[-3:]
+            end2 = word2[-3:]
+            
+            # Check if they have similar vowel-consonant patterns
+            if self._similar_ending_pattern(end1, end2):
+                return True
+        
+        # Check for similar endings (last 2-4 characters)
+        for length in [2, 3, 4]:
+            if len(word1) >= length and len(word2) >= length:
+                if word1[-length:] == word2[-length:]:
                     return True
         
         return False
     
-    def _pronunciations_rhyme(self, pron1: str, pron2: str) -> bool:
-        """Check if two pronunciations rhyme by comparing ending sounds"""
-        # Split pronunciations into phonemes
-        phonemes1 = pron1.split()
-        phonemes2 = pron2.split()
-        
-        if len(phonemes1) < 2 or len(phonemes2) < 2:
+    def _similar_ending_pattern(self, end1: str, end2: str) -> bool:
+        """Check if two word endings have similar vowel-consonant patterns"""
+        if len(end1) != len(end2):
             return False
         
-        # Check if they end with the same vowel sound and consonant
-        # Look for the last stressed vowel and everything after it
-        stressed_vowel1 = None
-        stressed_vowel2 = None
+        # Convert to vowel/consonant pattern
+        pattern1 = ''.join(['V' if c in self.vowels else 'C' for c in end1])
+        pattern2 = ''.join(['V' if c in self.vowels else 'C' for c in end2])
         
-        # Find last stressed vowel in pronunciation 1
-        for i, phoneme in enumerate(phonemes1):
-            if '1' in phoneme:  # Stressed vowel
-                stressed_vowel1 = i
-                break
-        
-        # Find last stressed vowel in pronunciation 2
-        for i, phoneme in enumerate(phonemes2):
-            if '1' in phoneme:  # Stressed vowel
-                stressed_vowel2 = i
-                break
-        
-        # If no stressed vowels found, use the last vowel
-        if stressed_vowel1 is None:
-            for i, phoneme in enumerate(phonemes1):
-                if any(vowel in phoneme for vowel in ['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH', 'IY', 'OW', 'OY', 'UH', 'UW']):
-                    stressed_vowel1 = i
-        
-        if stressed_vowel2 is None:
-            for i, phoneme in enumerate(phonemes2):
-                if any(vowel in phoneme for vowel in ['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH', 'IY', 'OW', 'OY', 'UH', 'UW']):
-                    stressed_vowel2 = i
-        
-        if stressed_vowel1 is None or stressed_vowel2 is None:
-            return False
-        
-        # Get the ending sounds (from stressed vowel to end)
-        ending1 = phonemes1[stressed_vowel1:]
-        ending2 = phonemes2[stressed_vowel2:]
-        
-        # Check if endings match
-        return ending1 == ending2
+        return pattern1 == pattern2
     
     def _get_rhyme_key(self, word: str) -> str:
-        """Get a rhyme key for grouping rhyming words"""
-        pronunciations = pronouncing.phones_for_word(word)
-        if not pronunciations:
-            return word
+        """Get a rhyme key for grouping similar rhymes"""
+        word = word.lower().strip('.,!?;:()[]{}')
         
-        # Use the first pronunciation
-        return pronunciations[0]
+        # Use last 3 characters as rhyme key
+        if len(word) >= 3:
+            return word[-3:]
+        return word
     
     def _is_multi_syllabic_rhyme(self, word1: str, word2: str) -> bool:
         """Check if two words form a multi-syllabic rhyme"""
         if not self._words_rhyme(word1, word2):
             return False
         
+        # Check if both words have multiple syllables
         syllables1 = self._count_syllables(word1)
         syllables2 = self._count_syllables(word2)
         
         return syllables1 >= 2 and syllables2 >= 2
     
     def _is_slant_rhyme(self, word1: str, word2: str) -> bool:
-        """Check if two words form a slant rhyme"""
-        if word1 == word2 or self._words_rhyme(word1, word2):
+        """Check if two words form a slant rhyme (near rhyme)"""
+        if self._words_rhyme(word1, word2):
             return False
         
-        # Check for similar ending sounds
+        # Calculate similarity
         similarity = self._calculate_similarity(word1, word2)
-        return similarity > 0.7
+        return similarity >= 0.7  # 70% similarity threshold
     
     def _count_syllables(self, word: str) -> int:
-        """Count syllables in a word"""
-        pronunciations = pronouncing.phones_for_word(word)
-        if not pronunciations:
-            return 1
+        """Count syllables in a word using vowel groups"""
+        word = word.lower()
+        vowels = 'aeiou'
         
-        return pronouncing.syllable_count(pronunciations[0])
+        # Count vowel groups
+        syllable_count = 0
+        prev_char_was_vowel = False
+        
+        for char in word:
+            is_vowel = char in vowels
+            if is_vowel and not prev_char_was_vowel:
+                syllable_count += 1
+            prev_char_was_vowel = is_vowel
+        
+        # Handle silent 'e' at the end
+        if word.endswith('e') and syllable_count > 1:
+            syllable_count -= 1
+        
+        return max(1, syllable_count)
     
     def _calculate_similarity(self, word1: str, word2: str) -> float:
         """Calculate similarity between two words"""
-        # Simple similarity based on ending sounds
-        if len(word1) < 3 or len(word2) < 3:
-            return 0.0
+        if word1 == word2:
+            return 1.0
         
-        # Check ending similarity
-        min_len = min(len(word1), len(word2))
-        common_ending = 0
+        # Use simple character-based similarity
+        shorter = min(len(word1), len(word2))
+        longer = max(len(word1), len(word2))
         
-        for i in range(1, min_len + 1):
-            if word1[-i:] == word2[-i:]:
-                common_ending = i
-            else:
-                break
+        if longer == 0:
+            return 1.0
         
-        return common_ending / max(len(word1), len(word2)) 
+        # Count matching characters
+        matches = 0
+        for i in range(shorter):
+            if word1[i] == word2[i]:
+                matches += 1
+        
+        return matches / longer 
