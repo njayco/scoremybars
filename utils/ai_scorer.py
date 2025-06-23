@@ -15,14 +15,24 @@ class AIScorer:
         api_key = os.getenv('OPENAI_API_KEY')
         if api_key:
             try:
-                # Try to create OpenAI client with error handling
+                # Clear any problematic environment variables that might cause the proxies error
+                env_vars_to_clear = ['HTTP_PROXY', 'HTTPS_PROXY', 'http_proxy', 'https_proxy']
+                for var in env_vars_to_clear:
+                    if var in os.environ:
+                        del os.environ[var]
+                
+                # Try to create OpenAI client with minimal configuration
                 self.client = openai.OpenAI(api_key=api_key)
+                
                 # Test the client with a simple call
                 self.client.models.list()
+                print("✅ OpenAI client initialized successfully")
             except Exception as e:
                 print(f"OpenAI client initialization failed: {e}")
                 print("Falling back to rule-based scoring only")
                 self.client = None
+        else:
+            print("No OpenAI API key found. Using rule-based scoring only.")
         
         # Load Billboard Hot 100 data for comparison
         self.billboard_data = self._load_billboard_data()
@@ -329,17 +339,19 @@ Return only a JSON object like this:
             }
     
     def get_highlights(self, text: str) -> List[str]:
-        """Get highlights and standout lines from the text"""
+        """Get highlights and standout lines from the text based on cleverness, wordplay, and rhyme density"""
         if not self.client:
-            return ["AI analysis not available - using basic highlighting"]
+            # Use rule-based highlighting when AI is not available
+            return self._rule_based_highlights(text)
         
         try:
             prompt = f"""
-Analyze these rap lyrics and identify 3-5 standout lines or phrases that demonstrate:
-- Clever wordplay
-- Strong metaphors
+Analyze these lyrics and identify 3-5 standout lines or phrases that demonstrate:
+- Clever wordplay and metaphors
+- Strong rhyme patterns
 - Effective punchlines
 - Memorable hooks
+- Cultural references or clever angles
 
 Lyrics:
 {text}
@@ -352,7 +364,7 @@ Return only a JSON array of strings with the highlights.
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a rap lyric analyst. Identify standout lines and return them as a JSON array."
+                        "content": "You are a music lyric analyst. Identify standout lines and return them as a JSON array."
                     },
                     {
                         "role": "user",
@@ -369,7 +381,250 @@ Return only a JSON array of strings with the highlights.
             
         except Exception as e:
             print(f"Failed to get highlights: {e}")
-            return ["AI analysis not available"]
+            return self._rule_based_highlights(text)
+    
+    def _rule_based_highlights(self, text: str) -> List[str]:
+        """Generate highlights using rule-based analysis based on cleverness, wordplay, and rhyme density"""
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+        if not lines:
+            return ["No lyrics found to analyze"]
+        
+        # Filter out section headers and very short lines
+        filtered_lines = []
+        for line in lines:
+            # Skip section headers (lines in brackets) and very short lines
+            if (not line.startswith('[') and 
+                not line.endswith(']') and 
+                len(line) > 5 and 
+                not line.isupper()):  # Skip all-caps lines
+                filtered_lines.append(line)
+        
+        if not filtered_lines:
+            return ["No meaningful lyrics found to analyze"]
+        
+        # Score each line based on different criteria
+        line_scores = []
+        
+        for i, line in enumerate(filtered_lines):
+            # Calculate scores for this line
+            cleverness_score = self._score_line_cleverness(line)
+            wordplay_score = self._score_line_wordplay(line)
+            rhyme_score = self._score_line_rhyme(line, filtered_lines, i)
+            
+            # Combined score (weighted average)
+            combined_score = (cleverness_score * 0.4) + (wordplay_score * 0.4) + (rhyme_score * 0.2)
+            
+            line_scores.append({
+                'line': line,
+                'index': i,
+                'cleverness': cleverness_score,
+                'wordplay': wordplay_score,
+                'rhyme': rhyme_score,
+                'combined': combined_score
+            })
+        
+        # Sort by combined score and get top highlights
+        line_scores.sort(key=lambda x: x['combined'], reverse=True)
+        
+        # Generate highlight descriptions
+        highlights = []
+        for i, score_data in enumerate(line_scores[:5]):  # Top 5 lines
+            line = score_data['line']
+            cleverness = score_data['cleverness']
+            wordplay = score_data['wordplay']
+            rhyme = score_data['rhyme']
+            combined = score_data['combined']
+            
+            # Determine what makes this line stand out
+            strengths = []
+            if cleverness > 75:
+                strengths.append("clever metaphor")
+            elif cleverness > 65:
+                strengths.append("good metaphor")
+                
+            if wordplay > 75:
+                strengths.append("strong wordplay")
+            elif wordplay > 65:
+                strengths.append("good wordplay")
+                
+            if rhyme > 75:
+                strengths.append("excellent rhyme")
+            elif rhyme > 65:
+                strengths.append("good rhyme")
+            
+            # Create highlight description
+            if strengths:
+                if combined > 80:
+                    highlight = f"\"{line}\" - Outstanding {', '.join(strengths)}"
+                elif combined > 70:
+                    highlight = f"\"{line}\" - Strong {', '.join(strengths)}"
+                else:
+                    highlight = f"\"{line}\" - Good {', '.join(strengths)}"
+            else:
+                if combined > 70:
+                    highlight = f"\"{line}\" - Well-crafted line with balanced elements"
+                else:
+                    highlight = f"\"{line}\" - Solid lyrical content"
+            
+            highlights.append(highlight)
+        
+        if not highlights:
+            highlights = ["No standout lines identified in this section"]
+        
+        return highlights[:5]  # Limit to 5 highlights
+    
+    def _score_line_cleverness(self, line: str) -> float:
+        """Score a line for cleverness (metaphors, cultural references, unique angles)"""
+        line_lower = line.lower()
+        score = 50.0  # Base score
+        
+        # Metaphor indicators
+        metaphor_indicators = ['like', 'as', 'metaphor', 'simile', 'compare', 'imagine', 'picture', 'seems', 'appears']
+        for indicator in metaphor_indicators:
+            if indicator in line_lower:
+                score += 10
+        
+        # Cultural references
+        cultural_indicators = ['money', 'fame', 'success', 'struggle', 'hustle', 'grind', 'dream', 'goal', 'life', 'death', 'love', 'hate']
+        for indicator in cultural_indicators:
+            if indicator in line_lower:
+                score += 5
+        
+        # Unique perspective indicators
+        unique_indicators = ['never', 'always', 'only', 'just', 'really', 'actually', 'truly', 'honestly']
+        for indicator in unique_indicators:
+            if indicator in line_lower:
+                score += 3
+        
+        # Word complexity (longer, more sophisticated words)
+        words = line.split()
+        avg_word_length = sum(len(word) for word in words) / len(words) if words else 0
+        if avg_word_length > 6:
+            score += 15
+        
+        return min(100, score)
+    
+    def _score_line_wordplay(self, line: str) -> float:
+        """Score a line for wordplay (puns, double meanings, clever word usage)"""
+        line_lower = line.lower()
+        score = 50.0  # Base score
+        
+        # Pun indicators
+        pun_indicators = ['play', 'word', 'double', 'meaning', 'flip', 'switch', 'turn', 'change']
+        for indicator in pun_indicators:
+            if indicator in line_lower:
+                score += 12
+        
+        # Alliteration (repeated consonant sounds)
+        words = line.split()
+        if len(words) > 2:
+            alliteration_count = 0
+            for i in range(len(words) - 1):
+                if words[i] and words[i+1]:
+                    if words[i][0].lower() == words[i+1][0].lower():
+                        alliteration_count += 1
+            score += alliteration_count * 8
+        
+        # Assonance (repeated vowel sounds)
+        vowels = 'aeiou'
+        vowel_patterns = []
+        for word in words:
+            word_vowels = ''.join(c for c in word.lower() if c in vowels)
+            if len(word_vowels) > 1:
+                vowel_patterns.append(word_vowels)
+        
+        if len(vowel_patterns) > 1:
+            for i in range(len(vowel_patterns) - 1):
+                if vowel_patterns[i] == vowel_patterns[i+1]:
+                    score += 10
+        
+        # Repetition for emphasis
+        word_counts = {}
+        for word in words:
+            word_counts[word.lower()] = word_counts.get(word.lower(), 0) + 1
+        
+        for word, count in word_counts.items():
+            if count > 1 and len(word) > 2:
+                score += count * 5
+        
+        return min(100, score)
+    
+    def _score_line_rhyme(self, line: str, all_lines: List[str], line_index: int) -> float:
+        """Score a line for rhyme quality (end rhymes, internal rhymes)"""
+        score = 50.0  # Base score
+        
+        # End rhyme with adjacent lines
+        if line_index > 0:
+            prev_line = all_lines[line_index - 1]
+            if self._lines_rhyme(line, prev_line):
+                score += 20
+        
+        if line_index < len(all_lines) - 1:
+            next_line = all_lines[line_index + 1]
+            if self._lines_rhyme(line, next_line):
+                score += 20
+        
+        # Internal rhyme within the line
+        words = line.split()
+        if len(words) > 3:
+            internal_rhymes = 0
+            for i in range(len(words) - 1):
+                for j in range(i + 1, len(words)):
+                    if self._words_rhyme(words[i], words[j]):
+                        internal_rhymes += 1
+            score += internal_rhymes * 8
+        
+        # Multi-syllabic rhyme detection
+        if len(words) > 2:
+            for i in range(len(words) - 1):
+                if self._is_multi_syllabic_rhyme(words[i], words[i+1]):
+                    score += 15
+        
+        return min(100, score)
+    
+    def _lines_rhyme(self, line1: str, line2: str) -> bool:
+        """Check if two lines rhyme at the end"""
+        words1 = line1.split()
+        words2 = line2.split()
+        
+        if not words1 or not words2:
+            return False
+        
+        return self._words_rhyme(words1[-1], words2[-1])
+    
+    def _words_rhyme(self, word1: str, word2: str) -> bool:
+        """Check if two words rhyme"""
+        # Simple rhyme detection based on ending sounds
+        word1_clean = ''.join(c for c in word1.lower() if c.isalpha())
+        word2_clean = ''.join(c for c in word2.lower() if c.isalpha())
+        
+        if len(word1_clean) < 2 or len(word2_clean) < 2:
+            return False
+        
+        # Check last 2-3 characters for rhyme
+        for length in [3, 2]:
+            if len(word1_clean) >= length and len(word2_clean) >= length:
+                if word1_clean[-length:] == word2_clean[-length:]:
+                    return True
+        
+        return False
+    
+    def _is_multi_syllabic_rhyme(self, word1: str, word2: str) -> bool:
+        """Check if two words form a multi-syllabic rhyme"""
+        # Simple multi-syllabic detection (words with similar ending patterns)
+        word1_clean = ''.join(c for c in word1.lower() if c.isalpha())
+        word2_clean = ''.join(c for c in word2.lower() if c.isalpha())
+        
+        if len(word1_clean) < 4 or len(word2_clean) < 4:
+            return False
+        
+        # Check for longer rhyming patterns (4+ characters)
+        for length in [4, 5]:
+            if len(word1_clean) >= length and len(word2_clean) >= length:
+                if word1_clean[-length:] == word2_clean[-length:]:
+                    return True
+        
+        return False
     
     def _parse_highlights(self, ai_response: str) -> List[str]:
         """Parse AI response to extract highlights"""
@@ -385,34 +640,22 @@ Return only a JSON array of strings with the highlights.
             print(f"Failed to parse highlights: {e}")
             return ["Error parsing highlights"]
     
-    def predict_genre(self, analysis_results: List[Dict[str, Any]]) -> str:
-        """Predict the most likely genre based on analysis"""
-        if not analysis_results:
-            return "Unknown"
+    def predict_genre(self, analysis_results: List[Dict[str, Any]], selected_genre: str = "hip_hop_rap") -> str:
+        """
+        Return the selected genre instead of predicting it
         
-        # Analyze overall characteristics
-        total_cleverness = sum(section['scores']['cleverness'] for section in analysis_results)
-        total_rhyme_density = sum(section['scores']['rhyme_density'] for section in analysis_results)
-        total_wordplay = sum(section['scores']['wordplay'] for section in analysis_results)
-        total_radio_score = sum(section['scores']['radio_score'] for section in analysis_results)
+        Args:
+            analysis_results (List): Analysis results from sections
+            selected_genre (str): User-selected genre
+            
+        Returns:
+            str: The selected genre (not a prediction)
+        """
+        # Get genre information for proper display
+        genre_data = self.billboard_data.get('genres', {}).get(selected_genre, {})
+        genre_name = genre_data.get('name', selected_genre.replace('_', ' ').title())
         
-        num_sections = len(analysis_results)
-        avg_cleverness = total_cleverness / num_sections
-        avg_rhyme_density = total_rhyme_density / num_sections
-        avg_wordplay = total_wordplay / num_sections
-        avg_radio_score = total_radio_score / num_sections
-        
-        # Genre prediction logic
-        if avg_radio_score > 75:
-            return "Commercial/Pop"
-        elif avg_cleverness > 80 and avg_wordplay > 80:
-            return "Boom Bap/Conscious"
-        elif avg_rhyme_density > 85:
-            return "Trap"
-        elif avg_cleverness > 70:
-            return "Alternative/Experimental"
-        else:
-            return "Drill"
+        return genre_name
     
     def predict_popularity(self, overall_scores: Dict[str, float]) -> Dict[str, Any]:
         """Predict popularity potential based on scores"""
@@ -471,7 +714,7 @@ Return only a JSON array of strings with the highlights.
         
         return suggestions[:5]  # Limit to 5 suggestions
     
-    def generate_song_description(self, lyrics: str, song_title: str = "", artist_name: str = "") -> Dict[str, Any]:
+    def generate_song_description(self, lyrics: str, song_title: str = "", artist_name: str = "", selected_genre: str = "hip_hop_rap") -> Dict[str, Any]:
         """
         Generate AI-powered song description and sub-genre prediction
         
@@ -479,34 +722,42 @@ Return only a JSON array of strings with the highlights.
             lyrics (str): The song lyrics
             song_title (str): Song title (optional)
             artist_name (str): Artist name (optional)
+            selected_genre (str): User-selected genre for analysis
             
         Returns:
             Dict: Song description, sub-genre prediction, and themes
         """
         if not self.client:
             # Use rule-based analysis when AI is not available
-            return self._rule_based_song_description(lyrics, song_title, artist_name)
+            return self._rule_based_song_description(lyrics, song_title, artist_name, selected_genre)
         
         try:
+            # Get genre information for context
+            genre_data = self.billboard_data.get('genres', {}).get(selected_genre, {})
+            genre_name = genre_data.get('name', selected_genre.replace('_', ' ').title())
+            
             prompt = f"""
-Analyze these rap lyrics and provide a comprehensive song description and sub-genre prediction.
+Analyze these lyrics and provide a comprehensive song description and sub-genre prediction within the {genre_name} genre.
 
 Song Title: {song_title or "Untitled"}
 Artist: {artist_name or "Unknown Artist"}
+Selected Genre: {genre_name}
 Lyrics:
 {lyrics}
 
 Please provide:
-1. A detailed song description (2-3 sentences)
-2. Sub-genre prediction (e.g., Drill, Trap, Boom Bap, Conscious, Alternative, etc.)
+1. A detailed song description (2-3 sentences) that correctly identifies this as a {genre_name} song
+2. Sub-genre prediction within {genre_name} (e.g., for country: Mainstream Country, Outlaw Country, Country Pop, etc.)
 3. Key themes and topics
 4. Mood and tone analysis
 5. Target audience
 
+IMPORTANT: The song should be described as a {genre_name} song, not hip-hop or rap, unless {genre_name} is actually hip-hop/rap.
+
 Return only a JSON object like this:
 {{
-    "description": "A detailed description of the song's content and style",
-    "sub_genre": "predicted sub-genre",
+    "description": "A detailed description of the song's content and style as a {genre_name} song",
+    "sub_genre": "predicted sub-genre within {genre_name}",
     "themes": ["theme1", "theme2", "theme3"],
     "mood": "mood description",
     "target_audience": "target audience description",
@@ -519,7 +770,7 @@ Return only a JSON object like this:
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert music analyst specializing in hip-hop and rap music. Analyze lyrics to determine sub-genres, themes, and provide detailed descriptions."
+                        "content": f"You are an expert music analyst specializing in {genre_name} music. Analyze lyrics to determine sub-genres within {genre_name}, themes, and provide detailed descriptions. Always identify the song as {genre_name}, not hip-hop or rap unless the selected genre is actually hip-hop/rap."
                     },
                     {
                         "role": "user",
@@ -535,15 +786,19 @@ Return only a JSON object like this:
             
         except Exception as e:
             print(f"AI song description failed: {e}")
-            return self._rule_based_song_description(lyrics, song_title, artist_name)
+            return self._rule_based_song_description(lyrics, song_title, artist_name, selected_genre)
     
-    def _rule_based_song_description(self, lyrics: str, song_title: str, artist_name: str) -> Dict[str, Any]:
+    def _rule_based_song_description(self, lyrics: str, song_title: str, artist_name: str, selected_genre: str) -> Dict[str, Any]:
         """Generate song description using rule-based analysis"""
         lyrics_lower = lyrics.lower()
         words = lyrics_lower.split()
         
-        # Sub-genre detection based on lyrical content
-        sub_genre = self._detect_sub_genre(lyrics_lower, words)
+        # Get genre information
+        genre_data = self.billboard_data.get('genres', {}).get(selected_genre, {})
+        genre_name = genre_data.get('name', selected_genre.replace('_', ' ').title())
+        
+        # Sub-genre detection based on selected genre and lyrical content
+        sub_genre = self._detect_sub_genre(lyrics_lower, words, selected_genre)
         
         # Theme detection
         themes = self._detect_themes(lyrics_lower, words)
@@ -552,50 +807,126 @@ Return only a JSON object like this:
         mood = self._detect_mood(lyrics_lower, words)
         
         # Generate description
-        description = self._generate_description(lyrics, song_title, artist_name, sub_genre, themes)
+        description = self._generate_description(lyrics, song_title, artist_name, sub_genre, themes, genre_name)
         
         return {
             "description": description,
             "sub_genre": sub_genre,
             "themes": themes,
             "mood": mood,
-            "target_audience": self._determine_target_audience(sub_genre, themes),
+            "target_audience": self._determine_target_audience(sub_genre, themes, selected_genre),
             "lyrical_style": self._analyze_lyrical_style(lyrics_lower, words)
         }
     
-    def _detect_sub_genre(self, lyrics: str, words: List[str]) -> str:
-        """Detect sub-genre based on lyrical content"""
-        # Drill indicators
-        drill_indicators = ['drill', 'opps', 'opposition', 'gang', 'violence', 'shoot', 'gun', 'dead', 'kill', 'blood', 'war']
-        drill_count = sum(1 for word in words if any(indicator in word for indicator in drill_indicators))
+    def _detect_sub_genre(self, lyrics: str, words: List[str], selected_genre: str) -> str:
+        """Detect sub-genre based on selected genre and lyrical content"""
         
-        # Trap indicators
-        trap_indicators = ['trap', 'dope', 'drugs', 'money', 'cash', 'bands', 'racks', 'hundreds', 'thousands', 'million']
-        trap_count = sum(1 for word in words if any(indicator in word for indicator in trap_indicators))
+        # Genre-specific sub-genre detection
+        if selected_genre == "country":
+            # Country sub-genres
+            country_indicators = {
+                'Mainstream Country': ['country', 'rural', 'small town', 'pickup truck', 'dirt road', 'farm', 'ranch'],
+                'Outlaw Country': ['outlaw', 'rebel', 'prison', 'jail', 'criminal', 'law', 'justice'],
+                'Country Pop': ['pop', 'radio', 'hit', 'chart', 'mainstream', 'commercial'],
+                'Bluegrass': ['bluegrass', 'banjo', 'fiddle', 'mandolin', 'acoustic', 'traditional'],
+                'Country Rock': ['rock', 'guitar', 'electric', 'band', 'concert', 'stage']
+            }
+        elif selected_genre == "hip_hop_rap":
+            # Hip-hop sub-genres (existing logic)
+            drill_indicators = ['drill', 'opps', 'opposition', 'gang', 'violence', 'shoot', 'gun', 'dead', 'kill', 'blood', 'war']
+            drill_count = sum(1 for word in words if any(indicator in word for indicator in drill_indicators))
+            
+            trap_indicators = ['trap', 'dope', 'drugs', 'money', 'cash', 'bands', 'racks', 'hundreds', 'thousands', 'million']
+            trap_count = sum(1 for word in words if any(indicator in word for indicator in trap_indicators))
+            
+            conscious_indicators = ['conscious', 'awareness', 'social', 'justice', 'equality', 'freedom', 'rights', 'change', 'revolution']
+            conscious_count = sum(1 for word in words if any(indicator in word for indicator in conscious_indicators))
+            
+            boom_bap_indicators = ['knowledge', 'wisdom', 'intellectual', 'philosophy', 'metaphor', 'simile', 'complex', 'sophisticated']
+            boom_bap_count = sum(1 for word in words if any(indicator in word for indicator in boom_bap_indicators))
+            
+            alternative_indicators = ['alternative', 'experimental', 'unique', 'different', 'creative', 'artistic', 'abstract']
+            alternative_count = sum(1 for word in words if any(indicator in word for indicator in alternative_indicators))
+            
+            counts = {
+                'Drill': drill_count,
+                'Trap': trap_count,
+                'Conscious': conscious_count,
+                'Boom Bap': boom_bap_count,
+                'Alternative': alternative_count
+            }
+            
+            max_genre = max(counts, key=counts.get)
+            return max_genre if counts[max_genre] > 0 else 'Mainstream Hip-Hop'
+            
+        elif selected_genre == "pop":
+            # Pop sub-genres
+            pop_indicators = {
+                'Mainstream Pop': ['pop', 'radio', 'hit', 'chart', 'mainstream', 'commercial'],
+                'Pop Rock': ['rock', 'guitar', 'band', 'electric', 'concert'],
+                'Electropop': ['electronic', 'synth', 'digital', 'computer', 'electric'],
+                'Teen Pop': ['teen', 'young', 'school', 'crush', 'first love', 'innocent'],
+                'Adult Contemporary': ['adult', 'mature', 'sophisticated', 'romantic', 'love']
+            }
+        elif selected_genre == "r_b":
+            # R&B sub-genres
+            r_b_indicators = {
+                'Contemporary R&B': ['r&b', 'soul', 'smooth', 'romantic', 'love'],
+                'Neo Soul': ['neo', 'soul', 'conscious', 'spiritual', 'jazz'],
+                'Alternative R&B': ['alternative', 'experimental', 'unique', 'different'],
+                'Hip-Hop Soul': ['hip-hop', 'rap', 'urban', 'street', 'gritty']
+            }
+        elif selected_genre == "electronic_dance":
+            # EDM sub-genres
+            edm_indicators = {
+                'Mainstream EDM': ['edm', 'electronic', 'dance', 'club', 'party'],
+                'House': ['house', 'groove', 'rhythm', 'beat', 'dance'],
+                'Dubstep': ['dubstep', 'bass', 'heavy', 'intense', 'drop'],
+                'Trance': ['trance', 'melodic', 'atmospheric', 'dreamy', 'ethereal']
+            }
+        elif selected_genre == "rock":
+            # Rock sub-genres
+            rock_indicators = {
+                'Mainstream Rock': ['rock', 'guitar', 'band', 'electric', 'concert'],
+                'Alternative Rock': ['alternative', 'indie', 'underground', 'experimental'],
+                'Hard Rock': ['hard', 'heavy', 'metal', 'aggressive', 'power'],
+                'Classic Rock': ['classic', 'vintage', 'retro', 'timeless', 'legendary']
+            }
+        else:
+            # Default to mainstream for unknown genres
+            return f"Mainstream {selected_genre.replace('_', ' ').title()}"
         
-        # Conscious indicators
-        conscious_indicators = ['conscious', 'awareness', 'social', 'justice', 'equality', 'freedom', 'rights', 'change', 'revolution']
-        conscious_count = sum(1 for word in words if any(indicator in word for indicator in conscious_indicators))
-        
-        # Boom Bap indicators
-        boom_bap_indicators = ['knowledge', 'wisdom', 'intellectual', 'philosophy', 'metaphor', 'simile', 'complex', 'sophisticated']
-        boom_bap_count = sum(1 for word in words if any(indicator in word for indicator in boom_bap_indicators))
-        
-        # Alternative indicators
-        alternative_indicators = ['alternative', 'experimental', 'unique', 'different', 'creative', 'artistic', 'abstract']
-        alternative_count = sum(1 for word in words if any(indicator in word for indicator in alternative_indicators))
-        
-        # Determine sub-genre based on highest count
-        counts = {
-            'Drill': drill_count,
-            'Trap': trap_count,
-            'Conscious': conscious_count,
-            'Boom Bap': boom_bap_count,
-            'Alternative': alternative_count
-        }
-        
-        max_genre = max(counts, key=counts.get)
-        return max_genre if counts[max_genre] > 0 else 'Mainstream Hip-Hop'
+        # For country and other genres, use the appropriate indicators
+        if selected_genre == "country":
+            counts = {}
+            for sub_genre, indicators in country_indicators.items():
+                counts[sub_genre] = sum(1 for word in words if any(indicator in word for indicator in indicators))
+            max_genre = max(counts, key=counts.get)
+            return max_genre if counts[max_genre] > 0 else 'Mainstream Country'
+        elif selected_genre == "pop":
+            counts = {}
+            for sub_genre, indicators in pop_indicators.items():
+                counts[sub_genre] = sum(1 for word in words if any(indicator in word for indicator in indicators))
+            max_genre = max(counts, key=counts.get)
+            return max_genre if counts[max_genre] > 0 else 'Mainstream Pop'
+        elif selected_genre == "r_b":
+            counts = {}
+            for sub_genre, indicators in r_b_indicators.items():
+                counts[sub_genre] = sum(1 for word in words if any(indicator in word for indicator in indicators))
+            max_genre = max(counts, key=counts.get)
+            return max_genre if counts[max_genre] > 0 else 'Contemporary R&B'
+        elif selected_genre == "electronic_dance":
+            counts = {}
+            for sub_genre, indicators in edm_indicators.items():
+                counts[sub_genre] = sum(1 for word in words if any(indicator in word for indicator in indicators))
+            max_genre = max(counts, key=counts.get)
+            return max_genre if counts[max_genre] > 0 else 'Mainstream EDM'
+        elif selected_genre == "rock":
+            counts = {}
+            for sub_genre, indicators in rock_indicators.items():
+                counts[sub_genre] = sum(1 for word in words if any(indicator in word for indicator in indicators))
+            max_genre = max(counts, key=counts.get)
+            return max_genre if counts[max_genre] > 0 else 'Mainstream Rock'
     
     def _detect_themes(self, lyrics: str, words: List[str]) -> List[str]:
         """Detect themes in the lyrics"""
@@ -637,7 +968,7 @@ Return only a JSON object like this:
         else:
             return "Balanced and reflective"
     
-    def _generate_description(self, lyrics: str, song_title: str, artist_name: str, sub_genre: str, themes: List[str]) -> str:
+    def _generate_description(self, lyrics: str, song_title: str, artist_name: str, sub_genre: str, themes: List[str], genre_name: str) -> str:
         """Generate a song description"""
         line_count = len(lyrics.split('\n'))
         word_count = len(lyrics.split())
@@ -647,7 +978,7 @@ Return only a JSON object like this:
         
         theme_text = ", ".join(themes[:3]) if themes else "various themes"
         
-        description = f"{title_text}{artist_text} is a {sub_genre.lower()} hip-hop song that explores {theme_text}. "
+        description = f"{title_text}{artist_text} is a {sub_genre.lower()} {genre_name} song that explores {theme_text}. "
         
         if line_count > 20:
             description += "The song features extensive lyrical content with multiple verses and choruses. "
@@ -669,20 +1000,76 @@ Return only a JSON object like this:
         else:
             return "straightforward"
     
-    def _determine_target_audience(self, sub_genre: str, themes: List[str]) -> str:
-        """Determine target audience based on sub-genre and themes"""
-        if sub_genre == 'Drill':
-            return "Young urban audience, typically 16-25"
-        elif sub_genre == 'Trap':
-            return "Mainstream hip-hop fans, 18-35"
-        elif sub_genre == 'Conscious':
-            return "Socially aware listeners, 20-40"
-        elif sub_genre == 'Boom Bap':
-            return "Hip-hop purists and intellectuals, 25-45"
-        elif sub_genre == 'Alternative':
-            return "Experimental music fans, 18-35"
+    def _determine_target_audience(self, sub_genre: str, themes: List[str], selected_genre: str) -> str:
+        """Determine target audience based on sub-genre, themes, and selected genre"""
+        
+        # Genre-specific target audience determination
+        if selected_genre == "country":
+            if "Outlaw" in sub_genre:
+                return "Country music fans, typically 25-45, who appreciate traditional and rebellious themes"
+            elif "Pop" in sub_genre:
+                return "Mainstream country and pop fans, 18-35, with crossover appeal"
+            elif "Bluegrass" in sub_genre:
+                return "Traditional country and bluegrass enthusiasts, 30-60"
+            else:
+                return "Mainstream country music fans, 25-50, with broad appeal"
+                
+        elif selected_genre == "hip_hop_rap":
+            if sub_genre == 'Drill':
+                return "Young urban audience, typically 16-25"
+            elif sub_genre == 'Trap':
+                return "Mainstream hip-hop fans, 18-35"
+            elif sub_genre == 'Conscious':
+                return "Socially aware listeners, 20-40"
+            elif sub_genre == 'Boom Bap':
+                return "Hip-hop purists and intellectuals, 25-45"
+            elif sub_genre == 'Alternative':
+                return "Experimental music fans, 18-35"
+            else:
+                return "General hip-hop audience, 16-40"
+                
+        elif selected_genre == "pop":
+            if "Teen" in sub_genre:
+                return "Teenage and young adult audience, 13-25"
+            elif "Adult Contemporary" in sub_genre:
+                return "Adult listeners, 25-45, seeking sophisticated pop music"
+            elif "Electropop" in sub_genre:
+                return "Young adult audience, 18-30, who enjoy electronic elements"
+            else:
+                return "Mainstream pop audience, 15-40, with broad demographic appeal"
+                
+        elif selected_genre == "r_b":
+            if "Neo Soul" in sub_genre:
+                return "Soul music enthusiasts, 25-45, who appreciate conscious themes"
+            elif "Alternative" in sub_genre:
+                return "Experimental R&B fans, 20-35, seeking unique sounds"
+            elif "Hip-Hop Soul" in sub_genre:
+                return "Urban music fans, 18-35, who enjoy hip-hop and R&B fusion"
+            else:
+                return "Contemporary R&B fans, 20-40, with romantic and emotional appeal"
+                
+        elif selected_genre == "electronic_dance":
+            if "House" in sub_genre:
+                return "Club and dance music enthusiasts, 18-35"
+            elif "Dubstep" in sub_genre:
+                return "Bass music fans, 18-30, who enjoy heavy electronic sounds"
+            elif "Trance" in sub_genre:
+                return "Electronic music purists, 20-40, who appreciate melodic and atmospheric sounds"
+            else:
+                return "EDM and dance music fans, 18-35, with festival and club appeal"
+                
+        elif selected_genre == "rock":
+            if "Alternative" in sub_genre:
+                return "Indie and alternative rock fans, 20-40"
+            elif "Hard Rock" in sub_genre:
+                return "Heavy rock and metal fans, 18-35"
+            elif "Classic Rock" in sub_genre:
+                return "Rock music enthusiasts, 30-60, who appreciate timeless rock"
+            else:
+                return "Mainstream rock fans, 20-45, with broad rock appeal"
         else:
-            return "General hip-hop audience, 16-40"
+            # Default for unknown genres
+            return f"General {selected_genre.replace('_', ' ')} music fans, 18-45"
     
     def _analyze_lyrical_style(self, lyrics: str, words: List[str]) -> str:
         """Analyze the lyrical style and approach"""

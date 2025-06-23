@@ -117,7 +117,7 @@ def analyze_lyrics():
         
         # Step 1: Generate AI song description and sub-genre prediction
         print("🎯 Generating song description and sub-genre analysis...") # Debug log
-        song_description = ai_scorer.generate_song_description(lyrics, song_title, artist_name)
+        song_description = ai_scorer.generate_song_description(lyrics, song_title, artist_name, selected_genre)
         
         # Step 2: Parse lyrics into sections (verse, chorus, etc.)
         print("📝 Parsing lyrics into sections...") # Debug log
@@ -167,7 +167,7 @@ def analyze_lyrics():
         
         # Step 5: Generate additional insights with genre context
         print("🎯 Generating insights...") # Debug log
-        genre_prediction = ai_scorer.predict_genre(analysis_results)
+        genre_prediction = ai_scorer.predict_genre(analysis_results, selected_genre)
         popularity_prediction = ai_scorer.predict_popularity(total_scores)
         suggestions = ai_scorer.generate_suggestions(total_scores, analysis_results)
         
@@ -222,8 +222,13 @@ def export_results():
         export_type = data.get('type', 'pdf')  # pdf or image
         analysis_data = data.get('analysis_data', {})
         
+        print(f"📤 Export request received: {export_type}")
+        print(f"📊 PDF_AVAILABLE: {PDF_AVAILABLE}")
+        print(f"📊 IMAGE_AVAILABLE: {IMAGE_AVAILABLE}")
+        
         if export_type == 'pdf':
             if not PDF_AVAILABLE:
+                print("⚠️ PDF export not available, falling back to text")
                 # Fallback to text-based export
                 text_content = generate_text_export(analysis_data)
                 return jsonify({
@@ -232,15 +237,29 @@ def export_results():
                     'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
                 })
             
-            # Generate PDF export
-            pdf_buffer = generate_pdf_export(analysis_data)
-            return jsonify({
-                'success': True,
-                'download_url': f"data:application/pdf;base64,{base64.b64encode(pdf_buffer.getvalue()).decode()}",
-                'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
-            })
+            try:
+                # Generate PDF export
+                print("📄 Generating PDF export...")
+                pdf_buffer = generate_pdf_export(analysis_data)
+                print("✅ PDF generated successfully")
+                return jsonify({
+                    'success': True,
+                    'download_url': f"data:application/pdf;base64,{base64.b64encode(pdf_buffer.getvalue()).decode()}",
+                    'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.pdf'
+                })
+            except Exception as e:
+                print(f"❌ PDF generation failed: {e}")
+                # Fallback to text-based export
+                text_content = generate_text_export(analysis_data)
+                return jsonify({
+                    'success': True,
+                    'download_url': f"data:text/plain;base64,{base64.b64encode(text_content.encode()).decode()}",
+                    'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
+                })
+                
         elif export_type == 'image':
             if not IMAGE_AVAILABLE:
+                print("⚠️ Image export not available, falling back to text")
                 # Fallback to text-based export
                 text_content = generate_text_export(analysis_data)
                 return jsonify({
@@ -249,19 +268,67 @@ def export_results():
                     'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
                 })
             
-            # Generate image export
-            image_buffer = generate_image_export(analysis_data)
-            return jsonify({
-                'success': True,
-                'download_url': f"data:image/png;base64,{base64.b64encode(image_buffer.getvalue()).decode()}",
-                'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
-            })
+            try:
+                # Generate image export
+                print("🖼️ Generating image export...")
+                image_buffer = generate_image_export(analysis_data)
+                print("✅ Image generated successfully")
+                return jsonify({
+                    'success': True,
+                    'download_url': f"data:image/png;base64,{base64.b64encode(image_buffer.getvalue()).decode()}",
+                    'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+                })
+            except Exception as e:
+                print(f"❌ Image generation failed: {e}")
+                # Fallback to text-based export
+                text_content = generate_text_export(analysis_data)
+                return jsonify({
+                    'success': True,
+                    'download_url': f"data:text/plain;base64,{base64.b64encode(text_content.encode()).decode()}",
+                    'filename': f'scoremybars_analysis_{datetime.now().strftime("%Y%m%d_%H%M%S")}.txt'
+                })
         else:
             return jsonify({'error': 'Invalid export type'}), 400
             
     except Exception as e:
         print(f"Export error: {e}")
         return jsonify({'error': f'Export failed: {str(e)}'}), 500
+
+@app.route('/share', methods=['POST'])
+def share_results():
+    """
+    API endpoint for sharing analysis results as an image
+    This generates an image that can be shared on social media
+    """
+    try:
+        data = request.get_json()
+        analysis_data = data.get('analysis_data', {})
+        
+        print("📱 Share request received")
+        
+        if not IMAGE_AVAILABLE:
+            print("⚠️ Image generation not available for sharing")
+            return jsonify({'error': 'Image sharing not available'}), 400
+        
+        try:
+            # Generate image export
+            print("🖼️ Generating image for sharing...")
+            image_buffer = generate_image_export(analysis_data)
+            print("✅ Share image generated successfully")
+            
+            # Return the image data for sharing
+            return jsonify({
+                'success': True,
+                'image_data': base64.b64encode(image_buffer.getvalue()).decode(),
+                'filename': f'scoremybars_share_{datetime.now().strftime("%Y%m%d_%H%M%S")}.png'
+            })
+        except Exception as e:
+            print(f"❌ Share image generation failed: {e}")
+            return jsonify({'error': f'Failed to generate share image: {str(e)}'}), 500
+            
+    except Exception as e:
+        print(f"Share error: {e}")
+        return jsonify({'error': f'Share failed: {str(e)}'}), 500
 
 def generate_text_export(analysis_data):
     """

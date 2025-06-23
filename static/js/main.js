@@ -511,21 +511,80 @@ document.addEventListener('DOMContentLoaded', () => {
      * Shares results using the Web Share API or copies link to clipboard
      * This function is made available globally so it can be called from HTML buttons
      */
-    window.shareResults = () => {
-        // Check if the browser supports the Web Share API
-        if (navigator.share) {
-            navigator.share({
-                title: 'ScoreMyBars Analysis',
-                text: 'Check out my rap lyrics analysis from ScoreMyBars!',
-                url: window.location.href
+    window.shareResults = async () => {
+        try {
+            // Check if we have analysis data to share
+            if (!currentAnalysisData) {
+                alert('No analysis data available. Please analyze some lyrics first.');
+                return;
+            }
+
+            // First, generate an image of the results
+            console.log('🖼️ Generating image for sharing...');
+            const response = await fetch('/export', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    type: 'image',
+                    analysis_data: currentAnalysisData
+                })
             });
-        } else {
-            // Fallback: copy the current page URL to clipboard
-            navigator.clipboard.writeText(window.location.href).then(() => {
-                alert('Link copied to clipboard!');
-            });
+
+            const data = await response.json();
+            
+            if (!data.success) {
+                alert('Failed to generate shareable image: ' + data.error);
+                return;
+            }
+
+            // Convert base64 to blob
+            const base64Data = data.download_url.split(',')[1];
+            const blob = await fetch(`data:image/png;base64,${base64Data}`).then(res => res.blob());
+            
+            // Create a file from the blob
+            const file = new File([blob], data.filename, { type: 'image/png' });
+
+            // Check if the browser supports the Web Share API
+            if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+                try {
+                    await navigator.share({
+                        title: 'ScoreMyBars Analysis Results',
+                        text: `Check out my ${currentAnalysisData.song_metadata?.title || 'lyrics'} analysis from ScoreMyBars!`,
+                        files: [file]
+                    });
+                    console.log('✅ Shared successfully via Web Share API');
+                } catch (shareError) {
+                    console.log('Web Share API failed, falling back to download:', shareError);
+                    // Fallback to download
+                    downloadImage(data.download_url, data.filename);
+                }
+            } else {
+                // Fallback: download the image and show instructions
+                downloadImage(data.download_url, data.filename);
+                alert('Image downloaded! You can now share it manually.');
+            }
+        } catch (error) {
+            console.error('Share error:', error);
+            alert('Sharing failed. The image has been downloaded instead.');
         }
     };
+
+    /**
+     * Downloads an image from a data URL
+     * @param {string} dataUrl - The data URL of the image
+     * @param {string} filename - The filename to save as
+     */
+    function downloadImage(dataUrl, filename) {
+        const link = document.createElement('a');
+        link.href = dataUrl;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        console.log(`✅ Image downloaded: ${filename}`);
+    }
 
     // =============================================================================
     // KEYBOARD SHORTCUTS
