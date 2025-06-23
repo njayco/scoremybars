@@ -10,7 +10,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: OPENAI_API_KEY
-        sync: false
+        sync: true
 
   - type: web
     name: scoremybars-5
@@ -23,7 +23,7 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: OPENAI_API_KEY
-        sync: false
+        sync: true
 
   - type: web
     name: scoremybars-6
@@ -36,4 +36,4 @@ services:
       - key: SECRET_KEY
         generateValue: true
       - key: OPENAI_API_KEY
-        sync: false 
+        sync: true 
